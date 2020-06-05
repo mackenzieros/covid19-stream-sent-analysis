@@ -9,6 +9,14 @@ import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.KStream;
+import org.apache.kafka.streams.kstream.Produced;
+import org.apache.kafka.streams.kstream.ValueTransformer;
+import org.apache.kafka.streams.kstream.ValueTransformerSupplier;
+import org.apache.kafka.streams.processor.ProcessorContext;
+import org.apache.kafka.streams.processor.StateStore;
+import org.apache.kafka.streams.state.KeyValueStore;
+import org.apache.kafka.streams.state.StoreBuilder;
+import org.apache.kafka.streams.state.Stores;
 
 public class NegNeuPosBranchApp {
 	public static final String CONTENT_TOPIC_NAME = "content";
@@ -24,25 +32,51 @@ public class NegNeuPosBranchApp {
 		props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, Serdes.String().getClass());
 		return props;
 	}
-	
+
+	@SuppressWarnings({ "unchecked" })
 	public static Topology createTopology() {
 		final StreamsBuilder builder = new StreamsBuilder();
+		// create store
+		StoreBuilder<KeyValueStore<Integer, String>> keyValueStoreBuilder = 
+				Stores.keyValueStoreBuilder(Stores.persistentKeyValueStore("myValueTransformState"),
+						Serdes.Integer(),
+						Serdes.String());
+		// register store
+		builder.addStateStore(keyValueStoreBuilder);
 		KStream<Integer, String> stream = builder.stream(CONTENT_TOPIC_NAME);
-		KStream<Integer, String>[] branches = stream
+		KStream<Integer, Double>[] branches = stream
+				.transformValues(new ValueTransformerSupplier<String, Double>() {
+					public ValueTransformer<String, Double> get() {
+						return new ValueTransformer<String, Double>() {
+							private StateStore state;
+							
+							public void init(ProcessorContext context) {
+								this.state = context.getStateStore("myValueTransformState");
+							}
+							
+							// able to access this.state
+							public Double transform(String value) {
+								return SentimentAnalyzer.findSentiment(value);
+							}
+							
+							public void close() {}
+						};
+					}
+				}, "myValueTransformState")
 				.branch(
-						(key, value) -> true,	// predicate for neg
-						(key, value) -> true,	// predicate for neu
-						(key, value) -> true	// predicate for pos
+						(key, value) -> (value > 0.0 && value < 2.0),	// predicate for negative
+						(key, value) -> (value >= 2.0 && value < 3.0),	// predicate for neutral
+						(key, value) -> (value >= 3.0)	// predicate for positive
 				);
 		branches[0]
-				.peek((key, value) -> System.out.printf("Negative: %s", value))
-				.to(NEGATIVE_TOPIC_NAME);
+				.peek((key, value) -> System.out.printf("Negative: %f\n", value))
+				.to(NEGATIVE_TOPIC_NAME, Produced.with(Serdes.Integer(), Serdes.Double()));
 		branches[1]
-				.peek((key, value) -> System.out.printf("Neutral: %s", value))
-				.to(NEUTRAL_TOPIC_NAME);
+				.peek((key, value) -> System.out.printf("Neutral: %f\n", value))
+				.to(NEUTRAL_TOPIC_NAME, Produced.with(Serdes.Integer(), Serdes.Double()));
 		branches[2]
-				.peek((key, value) -> System.out.printf("Positive: %s", value))
-				.to(POSITIVE_TOPIC_NAME);
+				.peek((key, value) -> System.out.printf("Positive: %f\n", value))
+				.to(POSITIVE_TOPIC_NAME, Produced.with(Serdes.Integer(), Serdes.Double()));
 		
 		return builder.build();
 	}

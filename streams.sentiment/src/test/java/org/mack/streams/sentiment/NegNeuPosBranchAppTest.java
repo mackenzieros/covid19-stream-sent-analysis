@@ -19,11 +19,12 @@ import org.junit.jupiter.api.Test;
 class NegNeuPosBranchAppTest {
 	private TopologyTestDriver testDriver = null;
 	private TestInputTopic<Integer, String> contentInputTopic = null;
-	private TestOutputTopic<Integer, String> negativeOutputTopic = null;
-	private TestOutputTopic<Integer, String> neutralOutputTopic = null;
-	private TestOutputTopic<Integer, String> positiveOutputTopic = null;
+	private TestOutputTopic<Integer, Double> negativeOutputTopic = null;
+	private TestOutputTopic<Integer, Double> neutralOutputTopic = null;
+	private TestOutputTopic<Integer, Double> positiveOutputTopic = null;
 	private Serde<Integer> integerSerde = new Serdes.IntegerSerde();
 	private Serde<String> stringSerde = new Serdes.StringSerde();
+	private Serde<Double> doubleSerde = new Serdes.DoubleSerde();
 	
 	@BeforeEach
 	void setUp() throws Exception {
@@ -33,11 +34,11 @@ class NegNeuPosBranchAppTest {
 		contentInputTopic = testDriver.createInputTopic(NegNeuPosBranchApp.CONTENT_TOPIC_NAME,
 				integerSerde.serializer(), stringSerde.serializer());
 		negativeOutputTopic = testDriver.createOutputTopic(NegNeuPosBranchApp.NEGATIVE_TOPIC_NAME,
-				integerSerde.deserializer(), stringSerde.deserializer());
+				integerSerde.deserializer(), doubleSerde.deserializer());
 		neutralOutputTopic = testDriver.createOutputTopic(NegNeuPosBranchApp.NEUTRAL_TOPIC_NAME,
-				integerSerde.deserializer(), stringSerde.deserializer());
+				integerSerde.deserializer(), doubleSerde.deserializer());
 		positiveOutputTopic = testDriver.createOutputTopic(NegNeuPosBranchApp.POSITIVE_TOPIC_NAME,
-				integerSerde.deserializer(), stringSerde.deserializer());
+				integerSerde.deserializer(), doubleSerde.deserializer());
 	}
 	
 	@AfterEach
@@ -48,10 +49,10 @@ class NegNeuPosBranchAppTest {
 	@Test
 	void testNeg() {
 		int key = 0;
-		String value = "This movie was actually neither that funny , nor super witty.";
+		String value = "This movie was actually terrible.";
 		contentInputTopic.pipeInput(key, value);
-		KeyValue<Integer, String> keyValue = negativeOutputTopic.readKeyValue();
-		assertEquals(keyValue, new KeyValue<>(key, "1 - Negative"));
+		KeyValue<Integer, Double> keyValue = negativeOutputTopic.readKeyValue();
+		assertEquals(keyValue, new KeyValue<>(key, 1.0));
 		assertTrue(negativeOutputTopic.isEmpty());
 		assertTrue(neutralOutputTopic.isEmpty());
 		assertTrue(positiveOutputTopic.isEmpty());
@@ -62,8 +63,8 @@ class NegNeuPosBranchAppTest {
 		int key = 0;
 		String value = "The movie was meh.";
 		contentInputTopic.pipeInput(key, value);
-		KeyValue<Integer, String> keyValue = neutralOutputTopic.readKeyValue();
-		assertEquals(keyValue, new KeyValue<>(key, "2 - Neutral"));
+		KeyValue<Integer, Double> keyValue = neutralOutputTopic.readKeyValue();
+		assertEquals(keyValue, new KeyValue<>(key, 2.0));
 		assertTrue(negativeOutputTopic.isEmpty());
 		assertTrue(neutralOutputTopic.isEmpty());
 		assertTrue(positiveOutputTopic.isEmpty());
@@ -74,8 +75,8 @@ class NegNeuPosBranchAppTest {
 		int key = 0;
 		String value = "I liked watching that movie.";
 		contentInputTopic.pipeInput(key, value);
-		KeyValue<Integer, String> keyValue = positiveOutputTopic.readKeyValue();
-		assertEquals(keyValue, new KeyValue<>(key, "3 - Positive"));
+		KeyValue<Integer, Double> keyValue = positiveOutputTopic.readKeyValue();
+		assertEquals(keyValue, new KeyValue<>(key, 3.0));
 		assertTrue(negativeOutputTopic.isEmpty());
 		assertTrue(neutralOutputTopic.isEmpty());
 		assertTrue(positiveOutputTopic.isEmpty());
