@@ -11,6 +11,7 @@ I plan to containerize the project so it will contain all of the necessary depen
 - [x] Create first round of tests
 - [x] Configure main stream topology
 - [ ] Get access to Twitter's COVID-19 stream API
+- [ ] Interface with Twitter's API
 - [ ] Configure topic partitions
 - [ ] Create topics for 50 states
 - [ ] Create script to write topic messages to files
