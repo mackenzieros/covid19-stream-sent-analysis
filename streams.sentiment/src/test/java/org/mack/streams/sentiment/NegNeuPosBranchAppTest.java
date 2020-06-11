@@ -3,8 +3,6 @@ package org.mack.streams.sentiment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Properties;
-
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KeyValue;
@@ -15,6 +13,7 @@ import org.apache.kafka.streams.TopologyTestDriver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.util.Properties;
 
 class NegNeuPosBranchAppTest {
 	private TopologyTestDriver testDriver = null;
@@ -32,13 +31,13 @@ class NegNeuPosBranchAppTest {
 		Topology topology = NegNeuPosBranchApp.createTopology();
 		testDriver = new TopologyTestDriver(topology, props);
 		contentInputTopic = testDriver.createInputTopic(NegNeuPosBranchApp.CONTENT_TOPIC_NAME,
-				integerSerde.serializer(), stringSerde.serializer());
+		    integerSerde.serializer(), stringSerde.serializer());
 		negativeOutputTopic = testDriver.createOutputTopic(NegNeuPosBranchApp.NEGATIVE_TOPIC_NAME,
-				integerSerde.deserializer(), doubleSerde.deserializer());
+		    integerSerde.deserializer(), doubleSerde.deserializer());
 		neutralOutputTopic = testDriver.createOutputTopic(NegNeuPosBranchApp.NEUTRAL_TOPIC_NAME,
-				integerSerde.deserializer(), doubleSerde.deserializer());
+		    integerSerde.deserializer(), doubleSerde.deserializer());
 		positiveOutputTopic = testDriver.createOutputTopic(NegNeuPosBranchApp.POSITIVE_TOPIC_NAME,
-				integerSerde.deserializer(), doubleSerde.deserializer());
+		    integerSerde.deserializer(), doubleSerde.deserializer());
 	}
 	
 	@AfterEach
