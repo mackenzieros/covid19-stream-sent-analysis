@@ -11,6 +11,9 @@ import edu.stanford.nlp.util.CoreMap;
 import java.util.Properties;
 
 public class SentimentAnalyzer {
+  /**
+   * Returns a double representing the sentiment value of a given String.
+   */
 	public static double findSentiment(String content) {
 		System.out.printf("Content: %s\n", content);	// for testing
 		Properties props = new Properties();

@@ -9,6 +9,11 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 
+/**
+ * A class that acts as the app's main interface to Twitter's stream API. 
+ * Handles authentication with Twitter's API, connecting to the stream, 
+ * the deserialization of Tweet JSON objects, and sending records to a broker.
+ */
 public class TweetProducer {
 	public static final String[] mockTweets = new String[] {
 			"Fiji has just cleared the last of our active #COVID19 patients. \r\n" + 
@@ -31,8 +36,8 @@ public class TweetProducer {
 		Properties props = new Properties();
 		props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
 		props.put(ProducerConfig.ACKS_CONFIG, "all");
-		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName());
-		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+		props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, IntegerSerializer.class.getName()); // convert our integer keys into a byte array
+		props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());  // convert our String values into a byte array
 		
 		Producer<Integer, String> producer = new KafkaProducer<>(props);
 		for (int i = 0; i < mockTweets.length; ++i) {

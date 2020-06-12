@@ -17,12 +17,23 @@ import org.apache.kafka.streams.Topology;
 import java.util.concurrent.CountDownLatch;
 import java.util.Properties;
 
+/**
+ * An Apache Kafka Stream app that splits a stream of records based on the sentiment values of record values.
+ * Creates a stream that expects Integer keys and String values. Topology is one source processor and three
+ * sink processors (for negative, neutral, and positive).
+ */
 public class NegNeuPosBranchApp {
+  /**
+   * Topic names
+   */
 	public static final String CONTENT_TOPIC_NAME = "content";
 	public static final String NEGATIVE_TOPIC_NAME = "negative-sentiment";
 	public static final String NEUTRAL_TOPIC_NAME = "neutral-sentiment";
 	public static final String POSITIVE_TOPIC_NAME = "positive-sentiment";
 	
+	/** 
+	 * Returns a Properties object with configurations to be used in the stream. 
+	 */
 	public static Properties createProperties() {
 		Properties props = new Properties();
 		props.put(StreamsConfig.APPLICATION_ID_CONFIG, "neg-neu-pos-branch");
@@ -32,8 +43,17 @@ public class NegNeuPosBranchApp {
 		return props;
 	}
 
+	/**
+	 * Returns the topology of the Kafka data flow.
+	 * Creates and registers a state store. 
+	 * Builds and branches our stream based on sentiment values.
+	 * Transforms all incoming records' values (tweets as Strings) into sentiment values (represented as Doubles).
+	 */
 	@SuppressWarnings({ "unchecked" })
 	public static Topology createTopology() {
+	  // sentiment thresholds as described by Stanford CoreNLP's RNNCoreAnnotations class
+	  final double NEGATIVE_THRESHOLD = 2.0;
+	  final double POSITIVE_THRESHOLD = 3.0;
 		final StreamsBuilder builder = new StreamsBuilder();
 		// create store
 		StoreBuilder<KeyValueStore<Integer, String>> keyValueStoreBuilder = 
@@ -62,10 +82,10 @@ public class NegNeuPosBranchApp {
 						};
 					}
 				}, "myValueTransformState")
-				.branch(
-				    (key, value) -> (value > 0.0 && value < 2.0),	// predicate for negative
-				    (key, value) -> (value >= 2.0 && value < 3.0),	// predicate for neutral
-				    (key, value) -> (value >= 3.0)	// predicate for positive
+				.branch(  // branch our stream such that records which satisfy the following predicates are sent to the appropriate topic
+				    (key, value) -> (value < NEGATIVE_THRESHOLD),	// predicate for a negative sentiment
+				    (key, value) -> (value >= NEGATIVE_THRESHOLD && value < POSITIVE_THRESHOLD),	// predicate for a neutral sentiment
+				    (key, value) -> (value >= POSITIVE_THRESHOLD)	// predicate for a positive sentiment
 				);
 
 		branches[0]
@@ -81,6 +101,12 @@ public class NegNeuPosBranchApp {
 		return builder.build();
 	}
 	
+	/**
+	 * Driver for the application.
+	 * Builds the stream using the properties and topology.
+	 * Sets a latch for program termination.
+	 * Starts and closes the stream.
+	 */
 	public static void main(String[] args) {
 		Properties props = createProperties();
 		
